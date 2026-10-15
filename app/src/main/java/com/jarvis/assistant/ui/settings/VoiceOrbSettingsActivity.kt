@@ -90,7 +90,9 @@ class VoiceOrbSettingsActivity : AppCompatActivity() {
     private fun setupPreviewWebView() {
         binding.orbPreviewWebView.apply {
             setBackgroundColor(Color.TRANSPARENT)
-            setLayerType(View.LAYER_TYPE_HARDWARE, null)
+            try {
+                setLayerType(View.LAYER_TYPE_NONE, null)
+            } catch (_: Exception) {}
             settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
@@ -100,6 +102,7 @@ class VoiceOrbSettingsActivity : AppCompatActivity() {
                 allowFileAccessFromFileURLs = true
                 @Suppress("DEPRECATION")
                 allowUniversalAccessFromFileURLs = true
+                cacheMode = WebSettings.LOAD_NO_CACHE
             }
 
             webViewClient = object : WebViewClient() {

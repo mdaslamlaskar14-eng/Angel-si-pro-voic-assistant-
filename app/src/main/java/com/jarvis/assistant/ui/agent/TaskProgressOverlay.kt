@@ -71,7 +71,7 @@ class TaskProgressOverlay(private val context: Context) {
         settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            cacheMode = WebSettings.LOAD_DEFAULT
+            cacheMode = WebSettings.LOAD_NO_CACHE
             allowFileAccess = false
         }
         webViewClient = object : WebViewClientCompat() {

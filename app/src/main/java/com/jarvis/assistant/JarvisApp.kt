@@ -69,6 +69,13 @@ class JarvisApp : Application() {
         // Clean up any stale or failed topic operations queue
         cleanStaleFcmQueueIfNeeded()
         
+        // Ensure WebView Code Cache directories exist so Chromium simple_file_enumerator doesn't fail with ENOENT
+        try {
+            val webViewCacheDir = java.io.File(cacheDir, "WebView/Default/HTTP Cache/Code Cache")
+            java.io.File(webViewCacheDir, "js").mkdirs()
+            java.io.File(webViewCacheDir, "wasm").mkdirs()
+        } catch (_: Exception) {}
+        
         com.google.firebase.FirebaseApp.initializeApp(this)
         SecurityManager.verify(this)
         

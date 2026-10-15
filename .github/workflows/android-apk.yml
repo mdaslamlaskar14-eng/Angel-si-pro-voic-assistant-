@@ -37,10 +37,11 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34 build-tools;34.0.0'
 
       - name: Make Gradlew Executable
         run: |
@@ -49,7 +50,10 @@ jobs:
           fi
 
       - name: Validate Gradle Wrapper
-        uses: gradle/actions/wrapper-validation@v4
+        uses: gradle/actions/wrapper-validation@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Prepare Build Credentials & Config
         env:
@@ -63,9 +67,14 @@ jobs:
           fi
 
           # Ensure debug.keystore is ready
-          if [ ! -f "debug.keystore" ] && [ -f "debug.keystore.base64" ]; then
-            base64 -d debug.keystore.base64 > debug.keystore
-            echo "Decoded debug.keystore from debug.keystore.base64."
+          if [ ! -f "debug.keystore" ]; then
+            if [ -f "debug.keystore.base64" ]; then
+              base64 -d debug.keystore.base64 > debug.keystore
+              echo "Decoded debug.keystore from debug.keystore.base64."
+            else
+              keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+              echo "Generated fallback debug.keystore."
+            fi
           fi
 
           if [ ! -f "app/google-services.json" ]; then
@@ -124,6 +133,10 @@ jobs:
       - name: Verify APK Outputs
         id: verify_apk
         run: |
+          if [ ! -d "app/build/outputs/apk" ]; then
+            echo "::error::Output directory app/build/outputs/apk does not exist!"
+            exit 1
+          fi
           FOUND_COUNT=$(find app/build/outputs/apk -type f -name "*.apk" | wc -l)
           if [ "$FOUND_COUNT" -eq 0 ]; then
             echo "::error::No APK files were found under app/build/outputs/apk!"

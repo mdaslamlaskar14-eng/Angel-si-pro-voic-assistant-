@@ -46,11 +46,19 @@ class MembershipViewModel(application: Application) : AndroidViewModel(applicati
         }
 
         viewModelScope.launch {
-            repository.observeCurrentMembership().collect { _currentMembership.value = it }
+            try {
+                repository.observeCurrentMembership().collect { _currentMembership.value = it }
+            } catch (e: Exception) {
+                _currentMembership.value = null
+            }
         }
 
         viewModelScope.launch {
-            repository.observeAdminSettings().collect { _adminSettings.value = it }
+            try {
+                repository.observeAdminSettings().collect { _adminSettings.value = it }
+            } catch (e: Exception) {
+                _adminSettings.value = null
+            }
         }
 
         viewModelScope.launch {

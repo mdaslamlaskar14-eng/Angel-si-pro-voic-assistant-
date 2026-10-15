@@ -66,22 +66,32 @@ class MembershipRepository(context: Context) {
 
     fun observeCurrentMembership(): Flow<Membership?> {
         val uid = auth.currentUser?.uid ?: return flowOf(null)
-        return db.collection("memberships")
-            .whereEqualTo("userId", uid)
-            .whereEqualTo("status", "ACTIVE")
-            .limit(1)
+        return db.collection("memberships").document(uid)
             .snapshots()
-            .map { it.toObjects(Membership::class.java).firstOrNull() }
+            .map { snapshot ->
+                if (snapshot.exists()) {
+                    val mem = snapshot.toObject(Membership::class.java)
+                    if (mem?.status == "ACTIVE") mem else null
+                } else {
+                    null
+                }
+            }
             .catch { e ->
-                handleFirestoreError(e as Exception, OperationType.GET, "memberships")
-                throw e
+                handleFirestoreError(e as Exception, OperationType.GET, "memberships/$uid")
+                emit(null)
             }
     }
 
     fun observeAdminSettings(): Flow<AdminSettings?> = db.collection("adminSettings")
         .document("paymentConfig")
         .snapshots()
-        .map { it.toObject(AdminSettings::class.java) }
+        .map { snapshot ->
+            if (snapshot.exists()) snapshot.toObject(AdminSettings::class.java) else null
+        }
+        .catch { e ->
+            handleFirestoreError(e as Exception, OperationType.GET, "adminSettings/paymentConfig")
+            emit(null)
+        }
 
     suspend fun isAdmin(): Boolean {
         val email = auth.currentUser?.email ?: return false
@@ -96,6 +106,10 @@ class MembershipRepository(context: Context) {
         .whereEqualTo("status", "PENDING")
         .snapshots()
         .map { it.toObjects(PaymentSubmission::class.java) }
+        .catch { e ->
+            handleFirestoreError(e as Exception, OperationType.LIST, "paymentSubmissions")
+            emit(emptyList())
+        }
 
     suspend fun approveSubmission(submission: PaymentSubmission) {
         val batch = db.batch()

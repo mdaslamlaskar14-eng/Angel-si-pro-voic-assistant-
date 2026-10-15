@@ -165,6 +165,4 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
 }
 
-apply(plugin = "com.google.gms.google-services")
-
 

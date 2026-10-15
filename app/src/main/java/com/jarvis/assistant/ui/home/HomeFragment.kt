@@ -215,7 +215,9 @@ class HomeFragment : Fragment() {
     private fun setupOrbWebView() {
         binding.orbWebView.apply {
             setBackgroundColor(Color.TRANSPARENT)
-            setLayerType(View.LAYER_TYPE_HARDWARE, null)
+            try {
+                setLayerType(View.LAYER_TYPE_NONE, null)
+            } catch (_: Exception) {}
 
             settings.apply {
                 javaScriptEnabled = true
@@ -226,7 +228,7 @@ class HomeFragment : Fragment() {
                 allowFileAccessFromFileURLs = true
                 @Suppress("DEPRECATION")
                 allowUniversalAccessFromFileURLs = true
-                cacheMode = WebSettings.LOAD_DEFAULT
+                cacheMode = WebSettings.LOAD_NO_CACHE
             }
 
             webViewClient = object : WebViewClient() {

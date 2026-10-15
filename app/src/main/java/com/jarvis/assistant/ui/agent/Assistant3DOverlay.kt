@@ -38,6 +38,7 @@ class Assistant3DOverlay(private val context: Context) {
             domStorageEnabled = true
             loadWithOverviewMode = true
             useWideViewPort = true
+            cacheMode = WebSettings.LOAD_NO_CACHE
         }
         webViewClient = object : WebViewClientCompat() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =

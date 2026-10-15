@@ -85,7 +85,7 @@ const $=s=>document.querySelector(s);
 const stage=$("#stage"),canvas=$("#c"),shadowEl=$("#shadow");
 
 let renderer;
-try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:"high-performance"});}
+try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:"default"});}
 catch(e){$("#err").style.display="block";stage.style.display="none";return;}
 renderer.setClearColor(0x000000,0);
 const scene=new THREE.Scene();

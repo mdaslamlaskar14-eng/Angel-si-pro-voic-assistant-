@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      // Check if user's email is in the admins collection
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Entity Validations
+    function isValidMembershipPlan(data) {
+      return data.name is string && data.name.size() > 0 &&
+             data.durationMonths is int && data.durationMonths >= 0 &&
+             data.priceMinorUnits is int && data.priceMinorUnits >= 0 &&
+             data.currency is string && data.currency.size() == 3 &&
+             data.active is bool &&
+             data.lifetime is bool &&
+             data.benefits is list;
+    }
+
+    function isValidOrder(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.planId is string &&
+             data.amountMinorUnits is int &&
+             data.paymentMethod in ['UPI', 'BINANCE'] &&
+             data.paymentStatus in ['PENDING', 'VERIFYING', 'PAID', 'CANCELLED'];
+    }
+
+    function isValidPaymentSubmission(data) {
+      return data.orderId is string &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.transactionReference is string && data.transactionReference.size() > 0 &&
+             data.status in ['PENDING', 'APPROVED', 'REJECTED'];
+    }
+
+    function isValidMembership(data) {
+      return data.userId is string &&
+             data.planId is string &&
+             data.status in ['ACTIVE', 'EXPIRED'] &&
+             data.startedAt is timestamp &&
+             data.lifetime is bool;
+    }
+
+    // Collection Rules
+    match /plans/{planId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /orders/{orderId} {
+      allow read: if isOwner(existing().userId) || isAdmin();
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid && isValidOrder(incoming());
+      allow update: if isAdmin();
+    }
+
+    match /paymentSubmissions/{submissionId} {
+      allow read: if isOwner(existing().userId) || isAdmin();
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid && isValidPaymentSubmission(incoming());
+      allow update: if isAdmin();
+    }
+
+    match /memberships/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin() && isValidMembership(incoming());
+    }
+
+    match /adminSettings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /admins/{email} {
+      allow read: if isSignedIn();
+      allow write: if false; // Only manageable via Firebase Console for security
+    }
+  }
+}
